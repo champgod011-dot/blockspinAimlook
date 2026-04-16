@@ -425,78 +425,86 @@ return originalFireServer(self, ...)
 end
 local args = { ... }
 if silentAimEnabled and args[2] == "shoot_gun" and aimTarget then
+local Character = LocalPlayer.Character
 local head = aimTarget.Character and aimTarget.Character:FindFirstChild("Head")
 local root = aimTarget.Character and aimTarget.Character:FindFirstChild("HumanoidRootPart")
 local hum  = aimTarget.Character and aimTarget.Character:FindFirstChild("Humanoid")
 
--- 🔥 ปรับ predict ให้แม่นขึ้น
-local function predictPosition(head, root)
-local velocity = root.Velocity
+if head and root and hum and Character then
 
-local myHead = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Head")
-if not myHead then return head.Position end
+-- ป้องกัน function ไม่มี
+if not predictPosition then return originalFireServer(self, ...) end
 
-local distance = (head.Position - myHead.Position).Magnitude
+local aimPos = predictPosition(head, root)
 
-local basePrediction = 0.12 + (distance / 1000)
-
-local ping = game:GetService("Stats").Network.ServerStatsItem["Data Ping"]:GetValue() / 1000
-
-local predictionTime = basePrediction + ping
-
-return head.Position + (velocity * predictionTime)
+local myHead = Character:FindFirstChild("Head")
+if not myHead then
+return originalFireServer(self, ...)
 end
 
-if head and root and hum then
-local aimPos     = predictPosition(head, root)
-local myHead     = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Head")
-local originPos  = myHead and myHead.Position or nil
+local originPos = myHead.Position
 
--- Shotgun handling
+-- Shotgun check (fix scope)
 local function isShotgun()
-if not Character then return false end
 for _, tool in ipairs(Character:GetChildren()) do
 if tool:IsA("Tool") then
 local ammo = tool:GetAttribute("AmmoType")
-if ammo == "shotgun" or ammo == "shootgun" then return true end
+if ammo == "shotgun" or ammo == "shootgun" then
+return true
+end
 end
 end
 return false
 end
 
-if isShotgun() then    
-                args[4] = CFrame.new(originPos, aimPos)    
-                local pellets = {}    
-                for i = 1, 6 do    
-                    local spread = Vector3.new(    
-                        math.random(-2, 2) * 0.03,    
-                        math.random(-2, 2) * 0.03,    
-                        math.random(-2, 2) * 0.03    
-                    )    
-                    table.insert(pellets, { [1] = {    
-                        Instance = head,    
-                        Normal   = Vector3.new(0, 1, 0),    
-                        Position = aimPos + spread,    
-                    }})    
-                end    
-                args[5] = pellets    
-            else    
-                local wallBlocked = isBehindWall(originPos, aimPos)    
-                args[4] = wallBlocked    
-                    and CFrame.new(math.huge, math.huge, math.huge)    
-                    or  CFrame.new(originPos, aimPos)    
-                args[5] = { [1] = { [1] = {    
-                    Instance = head,    
-                    Normal   = Vector3.new(0, 1, 0),    
-                    Position = aimPos,    
-                }}}    
-            end
+if isShotgun() then
+args[4] = CFrame.new(originPos, aimPos)
+
+local pellets = {}
+for i = 1, 6 do
+local spread = Vector3.new(
+math.random(-2, 2) * 0.03,
+math.random(-2, 2) * 0.03,
+math.random(-2, 2) * 0.03
+)
+
+table.insert(pellets, {
+[1] = {
+Instance = head,
+Normal = Vector3.new(0, 1, 0),
+Position = aimPos + spread,
+}
+})
 end
+
+args[5] = pellets
+
+else
+-- กัน isBehindWall ไม่มี
+local wallBlocked = false
+if isBehindWall then
+wallBlocked = isBehindWall(originPos, aimPos)
 end
-return originalFireServer(self, unpack(args))
-end)
-end)
+
+if wallBlocked then
+args[4] = CFrame.new(math.huge, math.huge, math.huge)
+else
+args[4] = CFrame.new(originPos, aimPos)
 end
+
+args[5] = {
+[1] = {
+[1] = {
+Instance = head,
+Normal = Vector3.new(0, 1, 0),
+Position = aimPos,
+}
+}
+}
+end
+
+end
+                    end
 
                     -- Hit indicator beam
                     pcall(function()
