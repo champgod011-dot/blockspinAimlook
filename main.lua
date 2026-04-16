@@ -416,6 +416,7 @@ end
 -- ══════════════════════════════════════════════════════════════
 --  Silent Aim Hook (FireServer)
 -- ══════════════════════════════════════════════════════════════
+-- Hit flash on target
 local originalFireServer
 if SendRemote and SendRemote.FireServer then
     pcall(function()
@@ -433,93 +434,87 @@ if SendRemote and SendRemote.FireServer then
                     local myHead     = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Head")
                     local originPos  = myHead and myHead.Position or nil
 
-                    -- Shotgun handling
-                    local function isShotgun()
-                        if not Character then return false end
-                        for _, tool in ipairs(Character:GetChildren()) do
-                            if tool:IsA("Tool") then
-                                local ammo = tool:GetAttribute("AmmoType")
-                                if ammo == "shotgun" or ammo == "shootgun" then return true end
-                            end
+                    local function isShotgun()  
+                        if not LocalPlayer.Character then return false end  
+                        local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+                        if tool then
+                            local ammo = tool:GetAttribute("AmmoType")
+                            if ammo == "shotgun" or ammo == "shootgun" then return true end
                         end
                         return false
-                    end
+                    end  
 
-                    if isShotgun() then
-                        args[4] = CFrame.new(originPos, aimPos)
-                        local pellets = {}
-                        for i = 1, 6 do
-                            local spread = Vector3.new(
-                                math.random(-2, 2) * 0.03,
-                                math.random(-2, 2) * 0.03,
-                                math.random(-2, 2) * 0.03
-                            )
-                            table.insert(pellets, { [1] = {
-                                Instance = head,
-                                Normal   = Vector3.new(0, 1, 0),
-                                Position = aimPos + spread,
-                            }})
-                        end
-                        args[5] = pellets
-                    else
-                        local wallBlocked = isBehindWall(originPos, aimPos)
-                        args[4] = wallBlocked
-                            and CFrame.new(math.huge, math.huge, math.huge)
-                            or  CFrame.new(originPos, aimPos)
-                        args[5] = { [1] = { [1] = {
-                            Instance = head,
-                            Normal   = Vector3.new(0, 1, 0),
-                            Position = aimPos,
-                        }}}
-                    end
+                    if isShotgun() then  
+                        args[4] = CFrame.new(originPos, aimPos)  
+                        local pellets = {}  
+                        for i = 1, 8 do  
+                            local spread = Vector3.new(  
+                                math.random(-1, 1) * 0.01,  
+                                math.random(-1, 1) * 0.01,  
+                                math.random(-1, 1) * 0.01  
+                            )  
+                            table.insert(pellets, { [1] = {  
+                                Instance = head,  
+                                Normal   = Vector3.new(0, 1, 0),  
+                                Position = aimPos + spread,  
+                            }})  
+                        end  
+                        args[5] = pellets  
+                    else  
+                        local wallBlocked = isBehindWall(originPos, aimPos)  
+                        args[4] = wallBlocked  
+                            and CFrame.new(0, 9e9, 0)  
+                            or  CFrame.new(originPos, aimPos)  
+                        args[5] = { [1] = { [1] = {  
+                            Instance = head,  
+                            Normal   = Vector3.new(0, 1, 0),  
+                            Position = aimPos,  
+                        }}}  
+                    end  
 
-                    -- Hit indicator beam
-                    pcall(function()
-                        local beam = Instance.new("Part")
-                        beam.Anchored    = true
-                        beam.CanCollide  = false
-                        beam.Size        = Vector3.new(0.08, 0.08, (aimPos - LocalPlayer.Character.Head.Position).Magnitude)
-                        beam.CFrame      = CFrame.new(LocalPlayer.Character.Head.Position, aimPos)
-                                         * CFrame.new(0, 0, -beam.Size.Z / 2)
-                        beam.Material    = Enum.Material.Neon
-                        beam.Transparency = 0.35
-                        beam.Color       = Color3.fromRGB(255, 0, 0)
-                        beam.Parent      = Workspace
-                        Debris:AddItem(beam, 4)
-                        -- Color feedback on hit
-                        if hum then
-                            local prevHp = hum.Health
-                            spawn(function()
-                                wait(0.1)
-                                if hum and hum.Health < prevHp then
-                                    beam.Color = Color3.fromRGB(0, 255, 0)
-                                    -- Hit flash on target
-                                    for _, part in ipairs(aimTarget.Character:GetDescendants()) do
-                                        if part:IsA("BasePart") then
-                                            local flash = Instance.new("Part")
-                                            flash.Size        = part.Size + Vector3.new(0.05, 0.05, 0.05)
-                                            flash.CFrame      = part.CFrame
-                                            flash.Anchored    = true
-                                            flash.CanCollide  = false
-                                            flash.Material    = Enum.Material.Neon
-                                            flash.Color       = Color3.fromRGB(255, 0, 0)
-                                            flash.Transparency = 0.5
-                                            flash.Parent      = Workspace
-                                            TweenService:Create(flash, TweenInfo.new(1.5, Enum.EasingStyle.Linear), { Transparency = 1 }):Play()
-                                            Debris:AddItem(flash, 2)
-                                        end
-                                    end
-                                end
-                            end)
-                        end
-                    end)
-                end
-            end
-            return originalFireServer(self, unpack(args))
-        end)
+                    pcall(function()  
+                        local beam = Instance.new("Part")  
+                        beam.Anchored    = true  
+                        beam.CanCollide  = false  
+                        beam.Size        = Vector3.new(0.05, 0.05, (aimPos - originPos).Magnitude)  
+                        beam.CFrame      = CFrame.new(originPos, aimPos) * CFrame.new(0, 0, -beam.Size.Z / 2)  
+                        beam.Material    = Enum.Material.Neon  
+                        beam.Transparency = 0.35  
+                        beam.Color       = Color3.fromRGB(255, 0, 0)  
+                        beam.Parent      = Workspace  
+                        Debris:AddItem(beam, 3)  
+                        
+                        if hum then  
+                            local prevHp = hum.Health  
+                            task.spawn(function()  
+                                task.wait(0.1)  
+                                if hum and hum.Health < prevHp then  
+                                    beam.Color = Color3.fromRGB(0, 255, 0)  
+                                    for _, part in ipairs(aimTarget.Character:GetDescendants()) do  
+                                        if part:IsA("BasePart") then  
+                                            local flash = Instance.new("Part")  
+                                            flash.Size        = part.Size + Vector3.new(0.05, 0.05, 0.05)  
+                                            flash.CFrame      = part.CFrame  
+                                            flash.Anchored    = true  
+                                            flash.CanCollide  = false  
+                                            flash.Material    = Enum.Material.Neon  
+                                            flash.Color       = Color3.fromRGB(255, 0, 0)  
+                                            flash.Transparency = 0.5  
+                                            flash.Parent      = Workspace  
+                                            TweenService:Create(flash, TweenInfo.new(1, Enum.EasingStyle.Linear), { Transparency = 1 }):Play()  
+                                            Debris:AddItem(flash, 1)  
+                                        end  
+                                    end  
+                                end  
+                            end)  
+                        end  
+                    end)  
+                end  
+            end  
+            return originalFireServer(self, unpack(args))  
+        end)  
     end)
 end
-
 -- ══════════════════════════════════════════════════════════════
 --  RenderStepped — Aim / FOV / Tracer
 -- ══════════════════════════════════════════════════════════════
