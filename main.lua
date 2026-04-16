@@ -958,39 +958,30 @@ end)
 -- ══════════════════════════════════════════════════════════════
 --  Skip Crate
 -- ══════════════════════════════════════════════════════════════
-local function trySkipCrate()
-    local ok, CrateModule = pcall(function()
+task.spawn(function()
+    local ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local ok, CrateController = pcall(function()
         return require(ReplicatedStorage.Modules.Game.CrateSystem.Crate)
     end)
-    if not (ok and CrateModule) then return end
-    task.spawn(function()
-        local spinning = CrateModule.spinning
-        if not spinning then return end
-        local timeout = 0
-        while not spinning.get() do
-            if timeout > 3 then break end
-            task.wait(0.05)
-            timeout = timeout + 0.05
-        end
-        if spinning.get() then
-            pcall(function() CrateModule.skip_spin() end)
-        end
-    end)
-end
+    if not (ok and CrateController) then return end
 
-local function setupAutoSkip()
-    local remote = ReplicatedStorage:WaitForChild("Remotes", 5)
-    if not remote then return end
-    local sendEvt = remote:WaitForChild("Send", 5)
-    if not (sendEvt and sendEvt:IsA("RemoteEvent")) then return end
-    sendEvt.OnClientEvent:Connect(function()
-        if skipCrateEnabled then trySkipCrate() end
-    end)
-end
-
-setupAutoSkip()
-ReplicatedStorage.ChildAdded:Connect(function(child)
-    if child.Name == "Remotes" then setupAutoSkip() end
+    while true do
+        if getgenv().EnabledSkip then
+            pcall(function()
+                if CrateController.skipping then
+                    CrateController.skipping.set(true)
+                end
+                if CrateController.class and CrateController.class.objects then
+                    for _, crate in pairs(CrateController.class.objects) do
+                        if crate.states and crate.states.open then
+                            crate.states.open.set(true)
+                        end
+                    end
+                end
+            end)
+        end
+        task.wait(0.05)
+    end
 end)
 
 -- ══════════════════════════════════════════════════════════════
