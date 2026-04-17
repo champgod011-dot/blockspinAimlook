@@ -696,10 +696,21 @@ RunService.Heartbeat:Connect(function()
     if getEnv().Sky and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
         local root    = LocalPlayer.Character.HumanoidRootPart
         local prevVel = root.Velocity
+        local prevCF  = root.CFrame
+
         local angle   = math.rad(tick() * 1500 % 360)
         local amount  = getEnv().SkyAmount
         root.Velocity = Vector3.new(math.cos(angle) * amount, math.random(280, 480), math.sin(angle) * amount)
+
+        -- Jitter Hitbox: ขยับ CFrame hitbox เล็กน้อยแต่ภาพไม่ขยับ
+        local jx = math.random(-8, 8) * 0.1
+        local jz = math.random(-8, 8) * 0.1
+        root.CFrame = prevCF * CFrame.new(jx, 0, jz)
+
         RunService.RenderStepped:Wait()
+
+        -- คืน CFrame และ Velocity กลับ
+        root.CFrame   = prevCF
         root.Velocity = prevVel
     end
 end)
