@@ -100,6 +100,11 @@ redLine.Color         = Color3.fromRGB(255, 50, 50)
 redLine.Transparency  = 1
 redLine.Visible       = false
 
+local speed = 50          
+local scale = 4           
+local jitterPower = 1     
+local counter = 0
+
 -- ── Global env helper ────────────────────────────────────────
 local getEnv = getgenv or function() return _G end
 
@@ -692,28 +697,36 @@ RunService.Heartbeat:Connect(function()
 end)
 
 -- Anti-Lock (sky velocity)
-RunService.Heartbeat:Connect(function()
+RunService.Heartbeat:Connect(function(dt)
     if getEnv().Sky and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local root    = LocalPlayer.Character.HumanoidRootPart
-        local prevVel = root.Velocity
-        local prevCF  = root.CFrame
-
-        local angle   = math.rad(tick() * 1500 % 360)
-        local amount  = getEnv().SkyAmount
-        root.Velocity = Vector3.new(math.cos(angle) * amount, math.random(280, 480), math.sin(angle) * amount)
-
-        -- Jitter Hitbox: ขยับ CFrame hitbox เล็กน้อยแต่ภาพไม่ขยับ
-        local jx = math.random(-8, 8) * 0.1
-        local jz = math.random(-8, 8) * 0.1
-        root.CFrame = prevCF * CFrame.new(jx, 0, jz)
-
-        RunService.RenderStepped:Wait()
-
-        -- คืน CFrame และ Velocity กลับ
-        root.CFrame   = prevCF
-        root.Velocity = prevVel
+        local char = LocalPlayer.Character
+        local root = char.HumanoidRootPart
+        local torso = char:FindFirstChild("LowerTorso") or char:FindFirstChild("Torso")
+        local rootJoint = torso and (torso:FindFirstChild("Root") or torso:FindFirstChild("RootJoint"))
+        
+        if rootJoint then
+            local prevVel = root.Velocity
+            local originalC0 = rootJoint.C0
+            
+            local angle = math.rad(tick() * 1500 % 360)
+            local amount = getEnv().SkyAmount
+            
+            counter = counter + (dt * speed)
+            local x = math.sin(counter) * scale
+            local y = (math.sin(counter) * math.cos(counter)) * scale
+            local noise = (math.random() - 0.5) * jitterPower
+            
+            root.Velocity = Vector3.new(math.cos(angle) * amount, math.random(280, 480), math.sin(angle) * amount)
+            rootJoint.C0 = originalC0 * CFrame.new(x + noise, y + noise, 0)
+            
+            RunService.RenderStepped:Wait()
+            
+            if rootJoint then rootJoint.C0 = originalC0 end
+            if root then root.Velocity = prevVel end
+        end
     end
 end)
+
 
 -- ══════════════════════════════════════════════════════════════
 --  Auto Pickup
