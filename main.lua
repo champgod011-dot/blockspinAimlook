@@ -141,7 +141,7 @@ local Window
 if WindUI then
     Window = WindUI:CreateWindow({
         Title      = "Mercy HUB  |  Block Spin 🔫",
-        Image = "rbxassetid://106299253506284"
+        Image = "rbxassetid://106299253506284",
         Author     = "Betatest:",
         Folder     = "Mercy HUB",
         Size       = UDim2.fromOffset(650, 400),
