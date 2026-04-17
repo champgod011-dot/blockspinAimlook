@@ -140,10 +140,10 @@ end)
 local Window
 if WindUI then
     Window = WindUI:CreateWindow({
-        Title      = "MYSTIC HUB  |  Block Spin 🔫| Paid 💸",
-        Icon       = "list",
-        Author     = "HI! I'M KUNGHE I'M COOL :",
-        Folder     = "MYSTIC HUB Now!!!",
+        Title      = "Mercy HUB  |  Block Spin 🔫",
+        Image = "rbxassetid://106299253506284"
+        Author     = "Betatest:",
+        Folder     = "Mercy HUB",
         Size       = UDim2.fromOffset(650, 400),
         Theme      = "Dark",
         Transparent = true,
