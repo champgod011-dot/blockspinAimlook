@@ -729,18 +729,18 @@ RunService.Heartbeat:Connect(function()
 end)
 
 -- Anti-Lock (sky velocity)
-local antiLockConn
-local function startAntiLock()
-    if antiLockConn then pcall(function() antiLockConn:Disconnect() end) end
-    antiLockConn = RunService.Heartbeat:Connect(function()
-        if not antiLockEnabled then return end
-        local char = LocalPlayer.Character
-        if not char then return end
-        local root = char:FindFirstChild("HumanoidRootPart")
-        if not root then return end
-        root.Velocity = Vector3.new(0, 1e4, 0)
-    end)
-end
+RunService.Heartbeat:Connect(function()
+    if getEnv().Sky and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local root    = LocalPlayer.Character.HumanoidRootPart
+        local prevVel = root.Velocity
+        local angle   = math.rad(tick() * 1500 % 360)
+        local amount  = getEnv().SkyAmount
+        root.Velocity = Vector3.new(math.cos(angle) * amount, math.random(280, 480), math.sin(angle) * amount)
+        RunService.RenderStepped:Wait()
+        root.Velocity = prevVel
+    end
+end)
+
 startAntiLock()
 
 -- ══════════════════════════════════════════════════════════════
